@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: shopapi
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        quantity INTEGER NOT NULL,
+        description TEXT,
+        category VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    INSERT INTO products (name, price, quantity, description, category) VALUES
+        ('Laptop', 999.99, 50, 'High-performance laptop for professionals', 'Electronics'),
+        ('Wireless Mouse', 29.99, 200, 'Ergonomic wireless mouse with USB receiver', 'Accessories'),
+        ('Mechanical Keyboard', 79.99, 150, 'RGB mechanical keyboard with blue switches', 'Accessories'),
+        ('USB-C Cable', 12.99, 500, '6ft braided USB-C charging cable', 'Cables'),
+        ('Monitor 27"', 349.99, 75, '27-inch 4K UHD monitor', 'Electronics'),
+        ('Webcam HD', 89.99, 120, '1080p HD webcam with microphone', 'Electronics'),
+        ('Phone Case', 19.99, 300, 'Protective silicone phone case', 'Accessories'),
+        ('Bluetooth Speaker', 59.99, 180, 'Portable waterproof Bluetooth speaker', 'Audio'),
+        ('Headphones', 149.99, 90, 'Noise-canceling over-ear headphones', 'Audio'),
+        ('Power Bank', 39.99, 250, '20000mAh portable power bank', 'Accessories')
+    ON CONFLICT DO NOTHING;
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: shopapi
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          value: "shopdb"
+        - name: POSTGRES_USER
+          value: "admin"
+        - name: POSTGRES_PASSWORD
+          value: "admin123"
+        - name: PGDATA
+          value: "/dev/shm/pgdata"
+        volumeMounts:
+        - name: dshm
+          mountPath: /dev/shm
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      - name: init-script
+        configMap:
+          name: postgres-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: shopapi
+  labels:
+    app: postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
