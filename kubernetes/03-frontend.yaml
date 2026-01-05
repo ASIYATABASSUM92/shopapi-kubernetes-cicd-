@@ -1,0 +1,284 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-html
+  namespace: shopapi
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ShopAPI Store - Kubernetes CI/CD Demo</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                padding: 20px; 
+                min-height: 100vh; 
+            }
+            .container { 
+                max-width: 1200px; 
+                margin: 0 auto; 
+                background: white; 
+                padding: 30px; 
+                border-radius: 15px; 
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3); 
+            }
+            h1 { 
+                color: #333; 
+                border-bottom: 3px solid #667eea; 
+                padding-bottom: 15px; 
+                margin-bottom: 20px; 
+                font-size: 32px;
+            }
+            .badge { 
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white; 
+                padding: 8px 20px; 
+                border-radius: 25px; 
+                font-size: 14px; 
+                display: inline-block; 
+                margin-left: 15px;
+                font-weight: bold;
+            }
+            .stats { 
+                font-size: 18px; 
+                color: #555; 
+                margin-bottom: 25px; 
+                padding: 15px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                border-left: 4px solid #667eea;
+            }
+            .products { 
+                display: grid; 
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+                gap: 25px; 
+                margin-top: 20px; 
+            }
+            .product { 
+                background: white; 
+                padding: 25px; 
+                border-radius: 12px; 
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+                border: 2px solid #f0f0f0; 
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+            }
+            .product:hover { 
+                transform: translateY(-8px); 
+                box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
+                border-color: #667eea;
+            }
+            .product h3 { 
+                color: #333; 
+                margin-bottom: 12px; 
+                font-size: 20px;
+            }
+            .price { 
+                color: #28a745; 
+                font-size: 32px; 
+                font-weight: bold; 
+                margin: 15px 0;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .stock { 
+                color: #666; 
+                margin: 10px 0; 
+                font-size: 15px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .stock-badge {
+                background: #e8f5e9;
+                color: #2e7d32;
+                padding: 4px 10px;
+                border-radius: 12px;
+                font-weight: bold;
+                font-size: 13px;
+            }
+            .description { 
+                color: #777; 
+                font-size: 14px; 
+                margin: 12px 0; 
+                line-height: 1.6;
+                min-height: 60px;
+            }
+            .category { 
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white; 
+                padding: 8px 16px; 
+                border-radius: 20px; 
+                font-size: 12px; 
+                display: inline-block; 
+                margin-top: 12px;
+                font-weight: bold;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .loading { 
+                text-align: center; 
+                padding: 60px; 
+                font-size: 24px; 
+                color: #667eea;
+                font-weight: bold;
+            }
+            .error {
+                background: #ffebee;
+                color: #c62828;
+                padding: 20px;
+                border-radius: 8px;
+                text-align: center;
+                margin: 20px 0;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .product {
+                animation: fadeIn 0.5s ease-out;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🛒 ShopAPI Product Store <span class="badge">Kubernetes + CI/CD</span></h1>
+            <div class="stats" id="stats">⏳ Loading products from Kubernetes cluster...</div>
+            <div class="products" id="products"></div>
+        </div>
+        <script>
+            fetch('/api/products')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(products => {
+                    document.getElementById('stats').innerHTML = `
+                        📦 Total Products: <strong>${products.length}</strong> | 
+                        🚀 Deployed on Kubernetes | 
+                        ⚡ Auto-scaled Backend
+                    `;
+                    document.getElementById('products').innerHTML = products.map((p, index) => `
+                        <div class="product" style="animation-delay: ${index * 0.1}s">
+                            <h3>${p.name}</h3>
+                            <div class="price">$${parseFloat(p.price).toFixed(2)}</div>
+                            <div class="stock">
+                                📦 Stock: <span class="stock-badge">${p.quantity} units</span>
+                            </div>
+                            <p class="description">${p.description}</p>
+                            <span class="category">${p.category}</span>
+                        </div>
+                    `).join('');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('products').innerHTML = `
+                        <div class="error">
+                            <strong>⚠️ Error loading products</strong><br>
+                            ${error.message}<br><br>
+                            Backend API may not be ready yet. Please refresh in a moment.
+                        </div>
+                    `;
+                });
+        </script>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: shopapi
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name _;
+        
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+            try_files $uri $uri/ /index.html;
+        }
+        
+        location /api/ {
+            proxy_pass http://backend-service:3000/api/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_cache_bypass $http_upgrade;
+            
+            # CORS headers
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Content-Type' always;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: shopapi
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+          name: http
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+        - name: nginx-conf
+          mountPath: /etc/nginx/conf.d
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: html
+        configMap:
+          name: frontend-html
+      - name: nginx-conf
+        configMap:
+          name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: shopapi
+  labels:
+    app: frontend
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
